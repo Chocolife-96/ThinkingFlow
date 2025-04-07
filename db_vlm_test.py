@@ -2,6 +2,7 @@ import os
 from volcenginesdkarkruntime import Ark
 import cv2
 import base64
+import time
 
 
 # 请确保您已将 API Key 存储在环境变量 ARK_API_KEY 中
@@ -34,16 +35,62 @@ get_vlm_response = lambda img, vlm_prompt: client.chat.completions.create(
 )
 
 
-image_path = "./office.jpg"
-image = cv2.imread(image_path)
+# image_path = "./office.jpg"
+# image = cv2.imread(image_path)
+camera_index = 0
+cap = cv2.VideoCapture(camera_index)
+CAMERA_INTERVAL = 5 # seconds
 
-vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
+tasks = ["tell me whether my glass is on my face?", "tell me whether my face is red?"]
+next_task = False
 
-# 将图片编码为 jpg 格式的 buffer   
-_, buffer = cv2.imencode('.jpg', image)
-encoded_image = base64.b64encode(buffer).decode('utf-8')
-vlm_response = get_vlm_response(encoded_image, vlm_prompt)
 
-print(vlm_response.choices[0])
+for task in tasks:
+    print(task)
+    next_task = False
+    while(not next_task):
+        ret, frame = cap.read()
+
+        print(frame.shape)
+
+        # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
+        vlm_prompt = task + "If true, just return True."
+        # 将图片编码为 jpg 格式的 buffer   
+        _, buffer = cv2.imencode('.jpg', frame)
+        cv2.imwrite("camera"+str(time.time())+".jpg", frame)
+
+        encoded_image = base64.b64encode(buffer).decode('utf-8')
+        # print(len(encoded_image))
+        vlm_response = get_vlm_response(encoded_image, vlm_prompt)
+
+        print(vlm_response.choices[0].message.content)
+        if vlm_response.choices[0].message.content == "True":
+            next_task = True
+        else:
+            next_task = False
+        time.sleep(CAMERA_INTERVAL)
+
+print("all tasks done!")
+
+# while(next_task):
+#     task_id += 1
+
+#     ret, frame = cap.read()
+
+#     # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
+#     vlm_prompt = tasks[task_id] + "If true, just return True."
+#     # 将图片编码为 jpg 格式的 buffer   
+#     _, buffer = cv2.imencode('.jpg', frame)
+#     encoded_image = base64.b64encode(buffer).decode('utf-8')
+#     vlm_response = get_vlm_response(encoded_image, vlm_prompt)
+
+#     print(vlm_response.choices[0].message.content)
+#     if vlm_response.choices[0].message.content == "True":
+#         next_task = True
+#     else:
+#         next_task = False
+
+
+#     break
 
 # print(response.choices[0])
