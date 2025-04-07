@@ -41,7 +41,7 @@ camera_index = 0
 cap = cv2.VideoCapture(camera_index)
 CAMERA_INTERVAL = 5 # seconds
 
-tasks = ["tell me whether my glass is on my face?", "tell me whether my face is red?"]
+tasks = ["tell me whether the glass is on the man's face in this picture?", "tell me whether the man's glass is off the man's face in this picture?"]
 next_task = False
 
 
@@ -49,6 +49,10 @@ for task in tasks:
     print(task)
     next_task = False
     while(not next_task):
+        for _ in range(3):
+            cap.read()
+            time.sleep(0.05)
+
         ret, frame = cap.read()
 
         print(frame.shape)
@@ -57,7 +61,7 @@ for task in tasks:
         vlm_prompt = task + "If true, just return True."
         # 将图片编码为 jpg 格式的 buffer   
         _, buffer = cv2.imencode('.jpg', frame)
-        cv2.imwrite("camera"+str(time.time())+".jpg", frame)
+        # cv2.imwrite("camera"+str(time.time())+".jpg", frame)
 
         encoded_image = base64.b64encode(buffer).decode('utf-8')
         # print(len(encoded_image))
