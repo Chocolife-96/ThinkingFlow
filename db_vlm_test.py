@@ -43,6 +43,7 @@ CAMERA_INTERVAL = 5 # seconds
 
 tasks = ["tell me whether the glass is on the man's face in this picture?", "tell me whether the man's glass is off the man's face in this picture?"]
 
+prompt = "Assume you are a robot, the desk in this picture needs to be cleaned. You have two skills, one is to pick something into the box, the other one is to "
 
 
 def split_tasks(vlm_prompt):
