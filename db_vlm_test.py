@@ -42,59 +42,51 @@ cap = cv2.VideoCapture(camera_index)
 CAMERA_INTERVAL = 5 # seconds
 
 tasks = ["tell me whether the glass is on the man's face in this picture?", "tell me whether the man's glass is off the man's face in this picture?"]
-next_task = False
 
 
-for task in tasks:
-    print(task)
-    next_task = False
-    while(not next_task):
-        for _ in range(3):
-            cap.read()
-            time.sleep(0.05)
 
-        ret, frame = cap.read()
-
-        print(frame.shape)
-
-        # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
-        vlm_prompt = task + "If true, just return True."
-        # 将图片编码为 jpg 格式的 buffer   
-        _, buffer = cv2.imencode('.jpg', frame)
-        # cv2.imwrite("camera"+str(time.time())+".jpg", frame)
-
-        encoded_image = base64.b64encode(buffer).decode('utf-8')
-        # print(len(encoded_image))
-        vlm_response = get_vlm_response(encoded_image, vlm_prompt)
-
-        print(vlm_response.choices[0].message.content)
-        if vlm_response.choices[0].message.content == "True":
-            next_task = True
-        else:
-            next_task = False
-        time.sleep(CAMERA_INTERVAL)
-
-print("all tasks done!")
-
-# while(next_task):
-#     task_id += 1
-
-#     ret, frame = cap.read()
-
-#     # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
-#     vlm_prompt = tasks[task_id] + "If true, just return True."
-#     # 将图片编码为 jpg 格式的 buffer   
-#     _, buffer = cv2.imencode('.jpg', frame)
-#     encoded_image = base64.b64encode(buffer).decode('utf-8')
-#     vlm_response = get_vlm_response(encoded_image, vlm_prompt)
-
-#     print(vlm_response.choices[0].message.content)
-#     if vlm_response.choices[0].message.content == "True":
-#         next_task = True
-#     else:
-#         next_task = False
+def split_tasks(vlm_prompt):
+    for _ in range(3):
+        cap.read()
+        time.sleep(0.05)
+    ret, frame = cap.read()
+    _, buffer = cv2.imencode('.jpg', frame)
+    encoded_image = base64.b64encode(buffer).decode('utf-8')
+    vlm_response = get_vlm_response(encoded_image, vlm_prompt)
+    
 
 
-#     break
+def send_task(tasks):
+    for task in tasks:
+        print(task)
+        next_task = False
+        while(not next_task):
+            for _ in range(3):
+                cap.read()
+                time.sleep(0.05)
 
-# print(response.choices[0])
+            ret, frame = cap.read()
+
+            # print(frame.shape)
+
+            # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
+            vlm_prompt = task + "If true, just return True."
+            # 将图片编码为 jpg 格式的 buffer   
+            _, buffer = cv2.imencode('.jpg', frame)
+            # cv2.imwrite("camera"+str(time.time())+".jpg", frame)
+
+            encoded_image = base64.b64encode(buffer).decode('utf-8')
+            # print(len(encoded_image))
+            vlm_response = get_vlm_response(encoded_image, vlm_prompt)
+
+            print(vlm_response.choices[0].message.content)
+            if vlm_response.choices[0].message.content == "True":
+                next_task = True
+            else:
+                next_task = False
+            time.sleep(CAMERA_INTERVAL)
+
+    print("all tasks done!")
+
+
+send_task(tasks)
