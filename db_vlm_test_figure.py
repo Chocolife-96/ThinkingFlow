@@ -56,33 +56,29 @@ def split_tasks_camera(vlm_prompt):
 def split_tasks_figure(encoded_image, vlm_prompt):
     vlm_response = get_vlm_response(encoded_image, vlm_prompt)
     return vlm_response.choices[0].message.content
-    
+
+def send_task(task):
+    print()
+    print("@@ send task: ", task)
 
 
-def send_task(tasks):
+def send_tasks(tasks, desk_state_figure):
+    num = 0
+    CAMERA_INTERVAL = 2
     for task in tasks:
-        print(task)
+        send_task(task)
+        # print(task)
         next_task = False
-        while(not next_task):
-            for _ in range(3):
-                cap.read()
-                time.sleep(0.05)
-
-            ret, frame = cap.read()
-
-            # print(frame.shape)
-
-            # vlm_prompt = "我是一个机器人，当前是我眼睛看到的场景，我想完成面前这张桌子的清理。我会的技能有：1）移动本体；2）抓取桌上的东西并放到目标地点，帮我生成我的子动作，达到完成任务的目的"
-            vlm_prompt = task + "If true, just return True."
-            # 将图片编码为 jpg 格式的 buffer   
-            _, buffer = cv2.imencode('.jpg', frame)
-            # cv2.imwrite("camera"+str(time.time())+".jpg", frame)
-
-            encoded_image = base64.b64encode(buffer).decode('utf-8')
-            # print(len(encoded_image))
+        while(not next_task and num < len(desk_state_figure)):
+            vlm_prompt = task + " If the subtask finished in this picture, just return one word \"True\"."
+            print("========================")
+            print("prompt sent to vlm: ", vlm_prompt)
+            print("current camera state: ", str(num))
+            encoded_image = desk_state_figure[num]
+            num += 1
             vlm_response = get_vlm_response(encoded_image, vlm_prompt)
 
-            print(vlm_response.choices[0].message.content)
+            print("vlm response: ", vlm_response.choices[0].message.content)
             if vlm_response.choices[0].message.content == "True":
                 next_task = True
             else:
@@ -93,11 +89,6 @@ def send_task(tasks):
 
 
 def main():
-
-    camera_index = 0
-    cap = cv2.VideoCapture(camera_index)
-    CAMERA_INTERVAL = 5 # seconds
-
     vlm_prompt = "Assume you are a robot, the desk in this picture needs to be cleaned. You have two skills, one is to pick something into the box, the other one is to wipe the table with a sponge. Please give me the sub-actions to complete the desk cleaning task. The sub-actions should be in the form of a list."
     figure_dict = get_figure_dict()
     response = split_tasks_figure(figure_dict["0"], vlm_prompt)
@@ -106,10 +97,12 @@ def main():
 
     # 去除空字符串，得到真正的内容列表
     sub_task_list = [p.strip() for p in spilted_response if p.strip()]
-    print(sub_task_list)
+    print("The prompt has been spilted into several sub-task: ",sub_task_list)
+
+    desk_state_figure = [figure_dict["0"], figure_dict["0"], figure_dict["1"], figure_dict["1"], figure_dict["1"], figure_dict["3"], figure_dict["3"]]
 
     # 发送任务
-    send_task(sub_task_list)
+    send_tasks(sub_task_list, desk_state_figure)
 
 
 if __name__ == "__main__":
