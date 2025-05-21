@@ -8,6 +8,8 @@ import subprocess
 import signal
 
 # export ARK_API_KEY='3db64cd1-9134-44ea-ba16-2eb83d6e7d6a' # yijia的key，需要时常看这个key是否用完，用完了就换一个免费的
+# export ARK_API_KEY='080e47d2-2b23-4899-a2e9-68f22cef56a3' # weigang的key，需要时常看这个key是否用完，用完了就换一个免费的
+
 
 def get_vlm_response(img, vlm_prompt):
     client = Ark(
@@ -96,7 +98,7 @@ def send_task(task):
 
 def send_tasks(tasks):
     num = 0
-    CAMERA_INTERVAL = 2
+    CAMERA_INTERVAL = 2 # 需要测量一下摄像头保存照片的间隔
     for task in tasks:
         robot_process = send_task(task)
         # print(task)
