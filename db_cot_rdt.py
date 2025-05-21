@@ -4,6 +4,10 @@ import cv2
 import base64
 import time
 import re
+import subprocess
+import signal
+
+# export ARK_API_KEY='3db64cd1-9134-44ea-ba16-2eb83d6e7d6a' # yijia的key，需要时常看这个key是否用完，用完了就换一个免费的
 
 def get_vlm_response(img, vlm_prompt):
     client = Ark(
@@ -63,13 +67,30 @@ def split_tasks_figure(encoded_image, vlm_prompt):
     vlm_response = get_vlm_response(encoded_image, vlm_prompt)
     return vlm_response.choices[0].message.content
 
+
+
+
+
+
+
+
+
 def send_task(task):
     print()
     print("@@ send task: ", task)
     if "sandbag" in task:
-        os.system('source xxx.sh') # 调用抓沙包的script
+        # 启动一个新的进程组
+        process = subprocess.Popen(
+            ['source', 'xxx.sh'],
+            preexec_fn=os.setsid  # 在一个新的进程组中运行
+        ) # 调用抓沙包的script
     elif "sponge" in task:
-        os.system('source xxx.sh') # 调用海绵清桌子的script
+        # 启动一个新的进程组
+        process = subprocess.Popen(
+            ['source', 'xxx.sh'],
+            preexec_fn=os.setsid  # 在一个新的进程组中运行
+        )  # 调用海绵清桌子的script
+    return process
 
 
 
@@ -77,7 +98,7 @@ def send_tasks(tasks):
     num = 0
     CAMERA_INTERVAL = 2
     for task in tasks:
-        send_task(task)
+        robot_process = send_task(task)
         # print(task)
         next_task = False
         while(not next_task):
@@ -92,6 +113,9 @@ def send_tasks(tasks):
             print("vlm response: ", vlm_response.choices[0].message.content)
             if vlm_response.choices[0].message.content == "True":
                 next_task = True
+                # 杀掉整个进程组
+                os.killpg(os.getpgid(robot_process.pid), signal.SIGTERM)
+                time.sleep(3)
             else:
                 next_task = False
             time.sleep(CAMERA_INTERVAL)
