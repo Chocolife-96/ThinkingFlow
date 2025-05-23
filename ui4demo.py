@@ -1,41 +1,49 @@
+from flask import Flask, render_template_string, Response
 import cv2
-import tkinter as tk
-from PIL import Image, ImageTk
 
-class CameraApp:
-    def __init__(self, window, window_title):
-        self.window = window
-        self.window.title(window_title)
+app = Flask(__name__)
+camera = cv2.VideoCapture(0)
 
-        # 打开摄像头（0 是默认设备编号）
-        self.vid = cv2.VideoCapture(0)
-        if not self.vid.isOpened():
-            raise RuntimeError("无法打开摄像头。")
+HTML_PAGE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>摄像头实时画面</title>
+</head>
+<body>
+    <h2>摄像头实时画面（右上角写有 hello）</h2>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480">
+</body>
+</html>
+'''
 
-        self.label = tk.Label(window)
-        self.label.pack()
+def gen_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
 
-        self.update()
-        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.window.mainloop()
+        # 添加文字“hello”到右上角
+        height, width, _ = frame.shape
+        cv2.putText(frame, "hello", (width - 100, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                    1, (0, 255, 0), 2, cv2.LINE_AA)
 
-    def update(self):
-        ret, frame = self.vid.read()
-        if ret:
-            # 转换 BGR 到 RGB
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(frame)
-            photo = ImageTk.PhotoImage(image=image)
+        # 编码为 JPEG 格式
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
 
-            self.label.configure(image=photo)
-            self.label.image = photo
+        # 用 multipart 流方式发送
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        # 每 15 毫秒更新一次画面
-        self.window.after(15, self.update)
+@app.route('/')
+def index():
+    return render_template_string(HTML_PAGE)
 
-    def on_closing(self):
-        self.vid.release()
-        self.window.destroy()
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# 启动应用
-CameraApp(tk.Tk(), "摄像头实时显示")
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
